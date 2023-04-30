@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Wallet</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script type="text/javascript" src="https://unpkg.com/bsv@1.5.3/bsv.min.js"></script>
+    <script type="text/javascript" src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        #block1, #block2, #block3, #block4, #block5 {
+          padding: 10px;
+          margin: 10px;
+          border: 1px solid black;
+          text-align: center;
+          background-color: #f1f1f1;
+        }
+
+        h1 {
+          font-size: 24px;
+          font-weight: bold;
+        }
+
+        #pubKey, #address, #balance, #mnemonic, #price {
+          font-size: 18px;
+        }
+
+        #qrcode {
+          width: 300px;
+          height: 300px;
+          margin: 0 auto;
+        }
+    </style>
+  </head>
+  <body>
+
+    <div id="block1">
+      <h1>Wallet</h1>
+    </div>
+
+    <div id="block2">
+      <h2>Your Public Key:</h2>
+      <p id="pubKey"></p>
+    </div>
+
+    <div id="block3">
+      <h2>Your Address:</h2>
+      <p id="address"></p>
+    </div>
+
+    <div id="block4">
+      <h2>Your QR Code:</h2>
+      <p id="qrcode"></p>
+    </div>
+
+    <div id="block5">
+      <h2>Balance:</h2>
+      <p id="balance"></p>
+      <h2>Mnemonic:</h2>
+      <p id="mnemonic"></p>
+      <h2>Price:</h2>
+      <p id="price"></p>
+    </div>
+
+    <script>
+      // Generate a new private key
+      const privKey = bsv.PrivateKey.fromRandom()
+
+      // Generate the corresponding public key and address
+      const pubKey = bsv.PublicKey.fromPrivateKey(privKey)
+      const address = pubKey.toAddress()
+
+      // Display the public key and address on the webpage
+      const pubKeyElement = document.getElementById('pubKey')
+      pubKeyElement.innerText = pubKey.toString()
+
+      const addressElement = document.getElementById('address')
+      addressElement.innerText = address.toString()
+
+      // Generate a QR code for the address
+      const addressCode = 'bitcoinsv:' + address.toString()
+      new QRCode(document.getElementById('qrcode'), addressCode)
+
+    // Fetch balance associated with the address
+    function fetchBalance() {
+      axios.get(`https://api.whatsonchain.com/v1/bsv/main/address/${address}/balance`)
+        .then(response => {
+          const balanceInSatoshis = response.data.confirmed;
+          const balanceInBSV = balanceInSatoshis / 1e8;
+          document.getElementById("balance").innerHTML = balanceInBSV + " BSV";
+        })
+        .catch(error => {
+          console.error("Error fetching balance:", error);
+          document.getElementById("balance").innerHTML = "Error fetching balance";
+        });
+    }
+    fetchBalance();
+    
+      // Generate and display the mnemonic phrase
+      const mnemonic = privKey.toWIF()
+      const mnemonicElement = document.getElementById('mnemonic')
+      mnemonicElement.innerText = mnemonic
+
+    // Fetch Bitcoin price from CoinGecko API
+    fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
+      .then(response => response.json())
+      .then(data => {
+        // Get the price from the JSON data
+        const price = data.bitcoin.usd;
+        // Display the price on the page
+        document.getElementById("price").innerHTML = "$" + price;
+      });
+    </script>
+  </body>
+</html>
